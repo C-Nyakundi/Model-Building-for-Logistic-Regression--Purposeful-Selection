@@ -1,89 +1,91 @@
 # Model Building for Logistic Regression: Purposeful Selection
- 
-## Project Overview
-This project aims to build a logistic regression model to determine the factors associated with timely complementary feeding, using data from the Performance Monitoring for Action (PMA) project. The dataset includes demographic and socioeconomic characteristics, feeding practices, and nutritional status indicators for mothers and children.
 
-The data was cleaned using Stata before being imported into R for further analysis and model building.
+## Project Overview
+This project develops a logistic regression model to identify factors associated with timely complementary feeding, utilizing data from the Performance Monitoring for Action (PMA) project. The dataset includes demographic, socioeconomic, and nutrition-related characteristics for mothers and children. Data cleaning was initially conducted in Stata, and R was used for the analysis and model building.
 
 ## Dataset
 - **Data Source**: PMA Project data, `CF_timely.dta`
-- **Observations**: 3,466
+- **Observations**: 3,466 initially (3,154 after removing missing data)
 - **Variables**: 17
 
 ### Key Variables
-- **Outcome Variable**: `timely_CF` (binary), where 0 = timely, 1 = untimely.
-- **Independent Variables**: Include maternal age, marital status, education, employment status, parity, wealth quintile, residency type, county of residence, minimum dietary diversity (MDD) score, food insecurity, and nutritional status.
+- **Outcome Variable**: `timely_CF` (binary), where 0 = timely and 1 = untimely.
+- **Independent Variables**: Maternal age, marital status, education, employment status, parity, wealth quintile, residency type, county of residence, minimum dietary diversity (MDD) score, food insecurity, and nutritional status.
 
 ## Analysis Workflow
-The modeling process follows **purposeful selection** to identify variables associated with timely complementary feeding.
+The analysis uses **purposeful selection** to identify variables associated with timely complementary feeding, proceeding through univariable analysis, multivariable comparisons, interaction testing, and model fit assessments.
 
 ### Steps
+
 1. **Load Libraries**
-   - `haven`: For importing `.dta` files.
-   - `lmtest`: For likelihood ratio tests.
-   - `ResourceSelection`: For assessing logistic model fit with the Hosmer-Lemeshow test.
+   - **Primary**: `haven` for data import, `lmtest` for likelihood ratio testing, `ResourceSelection` for logistic model goodness-of-fit testing.
+   - **Additional**: `dplyr` for data manipulation, `lattice` for plotting.
 
 2. **Data Import**
-   - Import the cleaned `.dta` dataset (`CF_timely.dta`) from Stata.
+   - Import the cleaned dataset (`CF_timely.dta`) from Stata.
 
-3. **Univariable Analysis**
-   - Each variable is individually tested against `timely_CF` using logistic regression.
-   - Variables with p-values < 0.25 are considered for inclusion in the multivariable model.
+3. **Data Cleaning**
+   - Conduct complete-case analysis, removing missing observations to stabilize model results. Final dataset includes 3,154 observations.
 
-4. **Multivariable Model Comparison**
-   - Multiple models are built and compared:
-     - **Model 1**: Contains selected variables based on univariable analysis.
-     - **Model 2**: Includes all variables.
-     - **Model 3**: Significant variables from Model 1 are retained.
+4. **Univariable Analysis**
+   - Conduct logistic regression for each independent variable with `timely_CF` as the outcome. Variables with a p-value < 0.25 are selected for multivariable analysis.
 
-5. **Assess Linearity Assumption**
-   - No continuous variables are included, so this step is skipped.
+5. **Multivariable Model Comparison**
+   - Three models are built and compared:
+     - **Model 1**: Includes variables identified through univariable analysis.
+     - **Model 2**: Contains all potential predictors.
+     - **Model 3**: Retains only significant variables from Model 1 for a more parsimonious model.
+   - **Comparison**: The difference in coefficients between models is examined, and an ANOVA test compares model fit.
 
-6. **Check Interactions Between Covariates**
-   - Tests for potential interactions, specifically between `mddscores` and `food_insecurity`, based on clinical assumptions.
+6. **Linearity Assumption Check**
+   - As there are no continuous variables, linearity testing is skipped.
 
-7. **Model Fit Assessment**
-   - Hosmer-Lemeshow Goodness-of-Fit (GoF) test is used to evaluate model fit.
-   - A jitter plot visualizes the predicted probabilities versus the observed outcomes.
+7. **Interaction Testing**
+   - Interaction between `mddscores` and `food_insecurity` is assessed based on clinical relevance to understand if dietary diversity impacts feeding practices differently under varying levels of food insecurity. The likelihood ratio test (`lrtest()`) indicates no significant interaction.
 
-8. **Odds Ratios Calculation**
-   - The odds ratios for the model coefficients are calculated to interpret the association between independent variables and the likelihood of timely feeding.
+8. **Model Fit Assessment**
+   - The Hosmer-Lemeshow Goodness-of-Fit (GoF) test assesses model fit. A p-value > 0.05 suggests an adequate fit between observed and predicted values.
+   - A jitter plot of predicted probabilities is created to visualize model predictions against observed outcomes.
 
-## Code Usage
-- **Set Seed**: `set.seed(794)` ensures reproducibility.
-- **Run Models**: Use `glm()` function for logistic regression, followed by `summary()` for model diagnostics.
-- **Odds Ratio Calculation**: `exp(coef(model1))` gives the odds ratios for each variable.
+9. **Odds Ratios Calculation**
+   - Calculated for model coefficients using `exp(coef())`, providing interpretability for each predictor’s association with timely feeding.
 
-### Example Code Snippets
+### Code Usage
+
+- **Setting Seed**: Ensures reproducibility.
+- **Logistic Regression**: `glm()` function is used for model building, with `summary()` for diagnostics.
+- **Odds Ratios**: Calculated using `exp(coef())`.
+
+### Key Code Snippets
 ```r
-# Importing Data
+# Import Data
 CF <- read_dta("CF_timely.dta")
 
-# Univariable Analysis
-model1 <- glm(CF$timely_CF ~ CF$education, family = binomial)
-summary(model1)
+# Univariable Analysis Example
+model_education <- glm(CF$timely_CF ~ CF$education, family = binomial)
+summary(model_education)
 
-# Calculate Odds Ratios for Model 1
+# Odds Ratios for Model 1
 odds_ratios <- exp(coef(model1))
 print(odds_ratios)
 ```
 
 ### Visualizations
-- **Jitter Plot**: Displays predicted probabilities against the observed outcomes.
-- **ROC Plot**: Plots the ROC curve to assess the model's discriminative ability.
+- **Jitter Plot**: Shows predicted probabilities against actual outcomes, using `jitter()` to make binary outcomes visible.
+- **ROC Curve**: Displays the ROC curve, with AUC calculated using the `pROC` package to assess the model's predictive ability.
 
-### Additional Notes
-- The Hosmer-Lemeshow test is applied to check model fit.
-- `lrtest()` function is used to test for significant interactions.
+### Model Diagnostics
+- **Hosmer-Lemeshow Test**: Evaluates the fit of the final model.
+- **Likelihood Ratio Test**: Used for checking interaction significance.
 
 ## Dependencies
 Ensure the following R packages are installed:
 - `haven`
 - `lmtest`
 - `ResourceSelection`
+- `dplyr`
 - `lattice`
-- `Deducer`
-- `ggplot2`
+- `pROC`
 
 ## Conclusion
-The analysis identifies significant predictors of timely complementary feeding. The final model provides insights into socio-economic and demographic factors affecting feeding practices, supporting interventions for timely feeding practices in the studied population.
+The model identifies key predictors of timely complementary feeding, shedding light on socioeconomic and demographic influences. Results from this analysis may support targeted interventions for timely feeding practices within the population studied.

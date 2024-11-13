@@ -9,7 +9,7 @@
 library(haven)
 library(lmtest) # Used to perform likelihood ratio tests, often to compare two nested models to see if adding variables significantly improves the fit
 library(ResourceSelection) # Used to evaluate the fit of logistic regression models, specifically implementing Hosmer-lemeshow GoF test
-
+library(dplyr)
 set.seed(794) # Setting random seed to ensure reliability & reproducibility of the results 
 
 
@@ -24,13 +24,18 @@ names(CF)
 
 summary(CF)
 
+## Removing missing observations from the data frame to ensure stability of the model
+CF = na.omit(CF)
+count(CF)
+## Complete case analysis of 3,154 observations (312 observations dropped)
+
 
 ##- Step two-  Uni variable Analysis (to explore the un-adjusted association between variables and outcome)
 #           - We aim to select variables with p-value < 0.25 for the next model
 #- Maternal age
 univariable.maternal_age <- glm(CF$timely_CF~CF$maternalage, family = binomial)
 summary(univariable.maternal_age)
-#  p-value 0.407 | co-eff = -0.061
+#  p-value 0.589 | co-eff = -0.043
 
 #- Marital Status 
 univariable.marital_status <- glm(CF$timely_CF~CF$marstat, family = binomial)
@@ -98,7 +103,7 @@ for (var in variables) {
 
 ## Step 3- Multivariable Model Comparisons
 # Variable of a P value of smaller than 0.25 and other variables of known clinical relevance can be included for further multivariable analysis
-model1 <- glm(CF$timely_CF~CF$education+CF$employstat+CF$births+CF$wealth_quintile+CF$resident+CF$countyofresidence_nairobi+CF$mddscores+CF$food_insecurity, family = binomial)
+model1 <- glm(CF$timely_CF~CF$education+CF$births+CF$wealth_quintile+CF$resident+CF$countyofresidence_nairobi+CF$mddscores+CF$food_insecurity, family = binomial)
 summary(model1)
 
 # Model-2 All variables 
@@ -129,9 +134,8 @@ round(delta.coef,3)
 
 
 ## Alternative two- Using analysis of Variance (ANOVA) to explore the difference between models
-anova(model2, model3, test = "Chisq") # We cannot use ANOVA since all of the three models do not have the same complete subset of data
-
-
+anova(model1, model2, model3, test = "Chisq") 
+## Check for more info in the Model evaluation file
 
 ## Step -3 : Assessing for linearity Assumption
 # In this step we check for linearity assumption for continuous variables, however our data set doesn't include any continuous variables
@@ -146,6 +150,7 @@ summary(model.interactions)
 # Assessing for the interaction in the first model - (Model with significant variables from bivariate analysis)
 model.interactions1 <- glm(CF$timely_CF~CF$education+CF$employstat+CF$births+CF$wealth_quintile+CF$resident+CF$countyofresidence_nairobi+CF$mddscores+CF$food_insecurity+CF$mddscores:CF$food_insecurity, data = CF, family = binomial)
 summary(model.interactions1)
+
 lrtest(model3, model.interactions1)
 #The results show that the P value for interaction term is 0.52, which is far away from significance level.
 #When the model with interaction term is compared to the preliminary main effects model, there is no difference.
@@ -157,7 +162,7 @@ lrtest(model3, model.interactions1)
 ###- HL test is used to assess whether a logistic regression model is appropriately fitting the data, especially in cases where binary outcomes are modeled (such as predicting presence/absence, success/failure, etc.).
 ###- A significant result from the test suggests that the model does not fit the data well, while a non-significant result suggests a good fit.
 hoslem.test(model1$y, fitted(model1))
-#The P value is 0.2, indicating that there is no significant difference between observed and predicted values. 
+#The P value is 0.06, indicating that there is no significant difference between observed and predicted values. 
 
 
 ### Model fit can also be examined by graphics
@@ -173,6 +178,7 @@ outcome_var <- model1$y
 # Check that outcome_var and Predprob have the same length now
 length(Predprob) == length(outcome_var) # This should return TRUE
 
+
 # Plot with jitter applied to the consistent outcome variable
 plot(
   Predprob, 
@@ -182,11 +188,35 @@ plot(
 )
 
 ## Histogram 
+# Plot the histogram using lattice
 library(lattice)
-histogram(Predprob|outcome_var)
-library(Deducer)
-library(ggplot2)
-rocplot(model1)
+# Convert outcome_var to factor if it's binary
+outcome_var <- factor(outcome_var)
+histogram(~ Predprob|outcome_var, main = "Histogram of Predicted Probabilities by Outcome",
+          xlab = "Predicted Probability")
+
+histogram(~ Predprob | outcome_var, main = "Histogram of Predicted Probabilities by Outcome",
+          xlab = "Predicted Probability", layout = c(1, 2))
+
+## Receiver Operating Characteristics & Area under the curve 
+# Load the package
+library(pROC)
+
+# Generate predicted probabilities from your model
+Predprob <- predict(model1, type = "response")
+
+# Create the ROC curve
+roc_curve <- roc(model1$y, Predprob)
+
+# Plot the ROC curve
+plot(roc_curve, main = "ROC Curve for Model 1", col = "red")
+
+# Obtain the AUC
+auc_value <- auc(roc_curve)
+
+# Print the AUC
+print(auc_value)
+## AUC - 0.62 has low predictive power
 
 ## Obtaining odds ratios from the model1
 model1 <- glm(CF$timely_CF~CF$education+CF$employstat+CF$births+CF$wealth_quintile+CF$resident+CF$countyofresidence_nairobi+CF$mddscores+CF$food_insecurity, family = binomial)

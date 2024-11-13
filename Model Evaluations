@@ -1,0 +1,59 @@
+##ANOVA output explanations
+
+From the anova() function, the models are being compared to see if adding or removing variables significantly improves the fit of the logistic regression model. Here's a breakdown of the interpretation:
+
+  Model 1 includes fewer predictors: education, births, wealth quintile, residency, county of residence, MDD scores, and food insecurit
+  Model 2 includes all variables from Model 1 plus maternal age, marital status, and employment status.
+  Model 3 includes only a subset of the variables that were significant in prior analyses (employment status, births, wealth quintile
+  and MDD scores).
+
+The Residual Deviance values represent the deviance for each model, which indicates how well the model fits the data (lower values mean better fit). The Pr(>Chi) column provides p-values for the significance of the deviance changes:
+
+Comparing Model 1 to Model 2: The deviance difference is significant (p = 0.0077), suggesting that adding the additional variables in Model 2 (maternal age, marital status, and employment status) improves the model fit over Model 1.
+
+Comparing Model 2 to Model 3: Here, the p-value is 0.490, which is not significant. This indicates that removing the additional predictors (education, residency, etc.) in Model 3 does not significantly worsen the fit compared to Model 2.
+
+Summary: Model 2 is the best fit of the three, as it improves significantly over Model 1 without losing significant predictive ability when simplified to Model 3. This suggests that Model 2's added variables contribute valuable information to the model.
+
+## Interactions among covariates in the model
+This output provides the summary of a logistic regression model that includes an interaction term between MDD scores (CF$mddscores) and food insecurity (CF$food_insecurity) to examine if the relationship between timely complementary feeding (CF$timely_CF) and these predictors changes depending on each other's levels. Here’s a breakdown of key results:
+
+###Key Coefficients and Significance
+CF$mddscores
+$food_insecurity: The interaction term is not significant (p = 0.177). This suggests there is no evidence that the effect of MDD scores on timely feeding differs depending on the level of food insecurity.
+
+Model Fit
+Null deviance: 4138.2 (indicating model deviance with no predictors).
+Residual deviance: 4003.1 (indicating deviance after including all predictors and the interaction term).
+AIC (Akaike Information Criterion): 4027.1. Lower AIC values generally suggest a better model fit, though this must be compared with other models.
+
+Employment status, number of births, wealth quintile, and MDD scores are significant predictors of timely complementary feeding. The interaction between MDD scores and food insecurity does not significantly impact the model, so these factors do not appear to influence each other’s effect on the outcome in this model.
+
+
+
+## 	Hosmer and Lemeshow goodness of fit (GOF) test
+The Hosmer-Lemeshow goodness-of-fit test is used to evaluate how well the logistic regression model fits the data, especially for binary outcomes like this.
+
+Interpretation of Output
+X-squared = 15.031: This is the test statistic. The Hosmer-Lemeshow test divides observations into groups based on predicted probabilities and then compares the observed and expected frequencies within these groups.
+
+df = 8: This is the degrees of freedom, typically one less than the number of groups created for the test (in this case, 10 groups).
+
+p-value = 0.05854: This p-value is just above the typical significance level of 0.05. A higher p-value suggests that there is no significant difference between the observed and expected values, indicating a good fit.
+
+Conclusion
+Since the p-value (0.05854) is slightly above 0.05, I would interpret this as suggesting an acceptable model fit. There is insufficient evidence to reject the null hypothesis of the Hosmer-Lemeshow test, which states that the model fits the data well. However, because it's close to 0.05, it might be worth considering additional model diagnostics if a more precise fit is required. 
+
+
+
+## ROC & AUC 
+An AUC (Area Under the Curve) of 0.625 indicates the model's ability to distinguish between the two classes—timely versus untimely complementary feeding in this case—is modest but not particularly strong. Here’s what it means:
+
+Model Discrimination: AUC values range from 0.5 to 1.0. An AUC of 0.5 suggests no discriminative power (similar to random guessing), while an AUC of 1.0 indicates perfect discrimination.
+
+Interpretation of 0.625: A value of 0.625 suggests that, approximately 62.5% of the time, the model will correctly rank a randomly chosen positive instance (e.g., untimely feeding) higher than a randomly chosen negative instance (e.g., timely feeding) in terms of predicted probability. In other words, the model can distinguish between timely and untimely feeding cases better than random guessing, but its performance is moderate.
+
+Threshold for Acceptability: Generally, an AUC between 0.7 and 0.8 is considered acceptable, 0.8 to 0.9 is considered excellent, and above 0.9 is outstanding. AUCs below 0.7, as here, may suggest that the model has limited predictive power and may need further improvement.
+
+In practical terms, while this model is better than random chance, it might require additional tuning, different features, or even alternative modeling approaches to achieve stronger predictive performance. (Check model improvement txt file)
+  
